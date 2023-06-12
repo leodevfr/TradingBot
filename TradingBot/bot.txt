@@ -37,12 +37,12 @@ rsiThreshold = input(70, title="RSI Overbought Threshold")
 rsi = ta.rsi(close, rsiPeriods)
 overboughtCondition = rsi > rsiThreshold
 
-// Long Entry
+// Entrée Long 
 longCondition = close > longest and close > leadLine1 and close > leadLine2 and close > conversionLine and close > baseLine and not overboughtCondition
 if longCondition
     strategy.entry("Long", strategy.long)
 
-// Short Entry
+// Entrée Short
 shortCondition = close < longest and close < leadLine1 and close < leadLine2 and close < conversionLine and close < baseLine
 if shortCondition
     strategy.entry("Short", strategy.short)
