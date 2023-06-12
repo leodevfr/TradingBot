@@ -1,0 +1,57 @@
+//@version=5
+strategy(title="NoxaBOT", shorttitle="NoxaBOT", overlay=true, initial_capital = 100, default_qty_type = strategy.percent_of_equity, default_qty_value = 100)
+
+// Paramètres de l'indicateur Ichimoku Cloud
+conversionPeriods = input(5, title="Conversion Line Length")
+basePeriods = input(13, title="Base Line Length")
+laggingSpan2Periods = input(26, title="Leading Span B Length")
+displacement = input(13, title="Lagging Span")
+
+// Calcul des lignes Ichimoku Cloud
+donchian(len) => ta.sma(ta.highest(len) + ta.lowest(len), len) / 2
+conversionLine = donchian(conversionPeriods)
+baseLine = donchian(basePeriods)
+leadLine1 = ta.sma(ta.sma(conversionLine, 3), 3)
+leadLine2 = donchian(laggingSpan2Periods)
+
+// Tracé des lignes Ichimoku Cloud
+conversionColor = conversionLine > baseLine ? color.blue : color.red
+baseColor = baseLine > conversionLine ? color.blue : color.red
+plot(conversionLine, color=conversionColor, title="Conversion Line")
+plot(baseLine, color=baseColor, title="Base Line")
+plot(close, offset = -displacement + 1, color=color.green, title="Lagging Span")
+p1 = plot(leadLine1, offset = displacement - 1, color=color.green, title="Leading Span A")
+p2 = plot(leadLine2, offset = displacement - 1, color=color.red, title="Leading Span B")
+
+kumoColor = leadLine1 > leadLine2 ? color.new(color.rgb(67, 160, 71, 90), 0) : color.new(color.rgb(244, 67, 54, 90), 0)
+plot(leadLine1 > leadLine2 ? leadLine1 : leadLine2, offset = displacement - 1, title = "Kumo Cloud Upper Line", color = color.new(kumoColor, 50))
+plot(leadLine1 < leadLine2 ? leadLine1 : leadLine2, offset = displacement - 1, title = "Kumo Cloud Lower Line", color = color.new(kumoColor, 50))
+
+// Règles d'entrée
+longest = ta.ema(close, 50)
+plot(longest, color = color.yellow)
+
+// Filtrage des signaux
+rsiPeriods = input(14, title="RSI Periods")
+rsiThreshold = input(70, title="RSI Overbought Threshold")
+rsi = ta.rsi(close, rsiPeriods)
+overboughtCondition = rsi > rsiThreshold
+
+// Long Entry
+longCondition = close > longest and close > leadLine1 and close > leadLine2 and close > conversionLine and close > baseLine and not overboughtCondition
+if longCondition
+    strategy.entry("Long", strategy.long)
+
+// Short Entry
+shortCondition = close < longest and close < leadLine1 and close < leadLine2 and close < conversionLine and close < baseLine
+if shortCondition
+    strategy.entry("Short", strategy.short)
+
+// Règles de sortie
+exitLongCondition = strategy.position_size > 0 and (close < leadLine1 or overboughtCondition)
+if exitLongCondition
+    strategy.close("Exit Long", "Long")
+
+exitShortCondition = strategy.position_size < 0 and close > leadLine1
+if exitShortCondition
+    strategy.close("Exit Short", "Short")
